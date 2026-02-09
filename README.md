@@ -13,7 +13,7 @@ ReservasEC es una plataforma completa de reservas que integra:
 - **Microservicios:** 4 servicios independientes (Auth, Booking, User, Notification)
 - **Booking Service refactorizado:** GraphQL + PostgreSQL con arquitectura SOLID
 
-**Estado:** ✅ Production-Ready (Kubernetes + Docker Compose)
+**Estado:** Production-Ready (Kubernetes + Docker Compose)
 
 ---
 
