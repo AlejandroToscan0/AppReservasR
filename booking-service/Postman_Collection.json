@@ -1,0 +1,432 @@
+{
+    "info": {
+        "_postman_id": "booking-service-graphql",
+        "name": "Booking Service GraphQL API v2.0",
+        "description": "Colección de requests para testear la API GraphQL refactorizada con PostgreSQL",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "🔐 Auth Setup",
+            "item": [
+                {
+                    "name": "Obtener JWT Token (Local)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:5001/auth/login",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "5001",
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Obtener JWT token del auth-service para usar en otras requests"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "📝 GraphQL Queries",
+            "item": [
+                {
+                    "name": "1. Obtener todas las reservas",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "graphql",
+                            "graphql": {
+                                "query": "query {\n  bookings {\n    success\n    message\n    bookings {\n      id\n      userId\n      fecha\n      fechaFormateada\n      servicio\n      estado\n      createdAt\n    }\n  }\n}"
+                            }
+                        },
+                        "url": {
+                            "raw": "http://localhost:4000/graphql",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "4000",
+                            "path": [
+                                "graphql"
+                            ]
+                        },
+                        "description": "✅ Obtener todas las reservas del usuario autenticado"
+                    }
+                },
+                {
+                    "name": "2. Obtener próximas 5 reservas",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "graphql",
+                            "graphql": {
+                                "query": "query {\n  upcomingBookings {\n    success\n    message\n    bookings {\n      id\n      servicio\n      fecha\n      fechaFormateada\n      estado\n    }\n  }\n}"
+                            }
+                        },
+                        "url": {
+                            "raw": "http://localhost:4000/graphql",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "4000",
+                            "path": [
+                                "graphql"
+                            ]
+                        },
+                        "description": "✅ Obtener próximas 5 reservas activas (fecha >= hoy)"
+                    }
+                },
+                {
+                    "name": "3. Obtener una reserva específica",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "graphql",
+                            "graphql": {
+                                "query": "query GetBooking($id: ID!) {\n  bookingById(id: $id) {\n    id\n    servicio\n    fecha\n    fechaFormateada\n    estado\n    canceladaEn\n  }\n}",
+                                "variables": "{\n  \"id\": \"INSERT_BOOKING_ID_HERE\"\n}"
+                            }
+                        },
+                        "url": {
+                            "raw": "http://localhost:4000/graphql",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "4000",
+                            "path": [
+                                "graphql"
+                            ]
+                        },
+                        "description": "✅ Obtener detalles de una reserva por ID"
+                    }
+                },
+                {
+                    "name": "4. Obtener reservas canceladas (auditoría)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "graphql",
+                            "graphql": {
+                                "query": "query {\n  cancelledBookings {\n    success\n    bookings {\n      id\n      servicio\n      canceladaEn\n      estado\n    }\n  }\n}"
+                            }
+                        },
+                        "url": {
+                            "raw": "http://localhost:4000/graphql",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "4000",
+                            "path": [
+                                "graphql"
+                            ]
+                        },
+                        "description": "✅ Obtener historial de reservas canceladas"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "✏️ GraphQL Mutations",
+            "item": [
+                {
+                    "name": "1. Crear reserva",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "graphql",
+                            "graphql": {
+                                "query": "mutation CreateBooking($fecha: String!, $servicio: String!) {\n  createBooking(fecha: $fecha, servicio: $servicio) {\n    success\n    message\n    booking {\n      id\n      fecha\n      fechaFormateada\n      servicio\n      estado\n      createdAt\n    }\n  }\n}",
+                                "variables": "{\n  \"fecha\": \"2024-02-20T15:30:00\",\n  \"servicio\": \"hotel\"\n}"
+                            }
+                        },
+                        "url": {
+                            "raw": "http://localhost:4000/graphql",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "4000",
+                            "path": [
+                                "graphql"
+                            ]
+                        },
+                        "description": "✅ CREAR una nueva reserva (notifica a notification-service)"
+                    }
+                },
+                {
+                    "name": "2. Cancelar reserva",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "graphql",
+                            "graphql": {
+                                "query": "mutation CancelBooking($id: ID!) {\n  cancelBooking(id: $id) {\n    success\n    message\n    booking {\n      id\n      estado\n      canceladaEn\n      servicio\n    }\n  }\n}",
+                                "variables": "{\n  \"id\": \"INSERT_BOOKING_ID_HERE\"\n}"
+                            }
+                        },
+                        "url": {
+                            "raw": "http://localhost:4000/graphql",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "4000",
+                            "path": [
+                                "graphql"
+                            ]
+                        },
+                        "description": "✅ CANCELAR una reserva (ACID transaction: cambiar estado, limpiar si > 5 canceladas, notificar)"
+                    }
+                },
+                {
+                    "name": "3. Eliminar reserva",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "graphql",
+                            "graphql": {
+                                "query": "mutation DeleteBooking($id: ID!) {\n  deleteBooking(id: $id) {\n    success\n    message\n    booking {\n      id\n      servicio\n    }\n  }\n}",
+                                "variables": "{\n  \"id\": \"INSERT_BOOKING_ID_HERE\"\n}"
+                            }
+                        },
+                        "url": {
+                            "raw": "http://localhost:4000/graphql",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "4000",
+                            "path": [
+                                "graphql"
+                            ]
+                        },
+                        "description": "✅ ELIMINAR una reserva completamente"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🔬 Test: Máximo 5 Canceladas",
+            "item": [
+                {
+                    "name": "Crear múltiples reservas (script)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "graphql",
+                            "graphql": {
+                                "query": "mutation CreateBooking($fecha: String!, $servicio: String!) {\n  createBooking(fecha: $fecha, servicio: $servicio) {\n    success\n    booking {\n      id\n      servicio\n    }\n  }\n}",
+                                "variables": "{\n  \"fecha\": \"2024-02-20T15:30:00\",\n  \"servicio\": \"test-{{$timestamp}}\"\n}"
+                            }
+                        },
+                        "url": {
+                            "raw": "http://localhost:4000/graphql",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "4000",
+                            "path": [
+                                "graphql"
+                            ]
+                        },
+                        "description": "📝 Crear varias reservas (ejecutar múltiples veces para el test)"
+                    }
+                },
+                {
+                    "name": "Verificar máximo 5 canceladas",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "graphql",
+                            "graphql": {
+                                "query": "query {\n  cancelledBookings {\n    bookings {\n      id\n      estado\n      canceladaEn\n    }\n  }\n}"
+                            }
+                        },
+                        "url": {
+                            "raw": "http://localhost:4000/graphql",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "4000",
+                            "path": [
+                                "graphql"
+                            ]
+                        },
+                        "description": "🔍 Verificar que haya máximo 5 canceladas (las más antiguas se deben eliminar)"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🔍 Health & Debug",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "http://localhost:4000/.well-known/apollo/server-health",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "4000",
+                            "path": [
+                                ".well-known",
+                                "apollo",
+                                "server-health"
+                            ]
+                        },
+                        "description": "✅ Verificar que Apollo Server está healthy"
+                    }
+                },
+                {
+                    "name": "GraphQL Schema Introspection",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "graphql",
+                            "graphql": {
+                                "query": "{\n  __schema {\n    types {\n      name\n      description\n    }\n  }\n}"
+                            }
+                        },
+                        "url": {
+                            "raw": "http://localhost:4000/graphql",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "4000",
+                            "path": [
+                                "graphql"
+                            ]
+                        },
+                        "description": "📊 Ver esquema GraphQL disponible"
+                    }
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "jwt_token",
+            "value": "PASTE_YOUR_JWT_TOKEN_HERE",
+            "type": "string"
+        }
+    ]
+}
