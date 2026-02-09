@@ -1,0 +1,72 @@
+# Service para Booking Service (ClusterIP)
+apiVersion: v1
+kind: Service
+metadata:
+  name: booking-service
+  namespace: microservices
+  labels:
+    app: booking-service
+  annotations:
+    description: "GraphQL API para gestión de reservas"
+spec:
+  type: ClusterIP
+  selector:
+    app: booking-service
+  ports:
+    - name: http
+      port: 4000
+      targetPort: 4000
+      protocol: TCP
+---
+# Service para exponer externamente (NodePort para desarrollo)
+apiVersion: v1
+kind: Service
+metadata:
+  name: booking-service-external
+  namespace: microservices
+  labels:
+    app: booking-service
+spec:
+  type: NodePort
+  selector:
+    app: booking-service
+  ports:
+    - name: http
+      port: 4000
+      targetPort: 4000
+      nodePort: 30400
+      protocol: TCP
+---
+# ServiceAccount para Booking Service
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: booking-service-sa
+  namespace: microservices
+---
+# ClusterRole para Booking Service
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: booking-service-role
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+# ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: booking-service-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: booking-service-role
+subjects:
+  - kind: ServiceAccount
+    name: booking-service-sa
+    namespace: microservices

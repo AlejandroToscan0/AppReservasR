@@ -1,0 +1,28 @@
+# Ingress para Booking Service GraphQL
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: booking-service-ingress
+  namespace: microservices
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: booking.reservasec.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: booking-service
+                port:
+                  number: 4000
+  # TLS configuration (requiere cert-manager)
+  # tls:
+  #   - hosts:
+  #       - booking.reservasec.local
+  #     secretName: booking-service-tls

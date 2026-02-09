@@ -1,4 +1,24 @@
 services:
+  # PostgreSQL para Booking Service (GraphQL)
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=bookingdb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB para Auth Service y User Service (sin cambios)
   mongo:
     image: mongo
     restart: always
@@ -7,12 +27,18 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # Auth Service (sin cambios, sigue usando MongoDB)
   auth-service:
     build:
       context: ./auth-service
     ports:
-      - "4000:4000"
+      - "5001:4000"
     volumes:
       - ./auth-service:/app
       - /app/node_modules
@@ -20,22 +46,41 @@ services:
       - MONGO_URI=mongodb://mongo:27017/authdb
       - JWT_SECRET=secreto-super-seguro
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
 
+  # Booking Service (REFACTORIZADO: GraphQL + PostgreSQL)
   booking-service:
     build:
       context: ./booking-service
+    container_name: booking-service
     ports:
-      - "5000:5000"
+      - "4000:4000"
     volumes:
       - ./booking-service:/app
       - /app/node_modules
     environment:
-      - MONGO_URI=mongodb://mongo:27017/bookingdb
+      - NODE_ENV=development
+      - PORT=4000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=bookingdb
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
       - JWT_SECRET=secreto-super-seguro
+      - USER_SERVICE_URL=http://user-service:5003
+      - NOTIFICATION_SERVICE_URL=http://notification-service:5002
     depends_on:
-      - mongo
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/.well-known/apollo/server-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
 
+  # Notification Service (sin cambios)
   notification-service:
     build:
       context: ./notification-service
@@ -50,8 +95,10 @@ services:
       - EMAIL_USER=58b4d823829f7f
       - EMAIL_PASS=e77d610fd759b5
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
 
+  # User Service (sin cambios, sigue usando MongoDB)
   user-service:
     build: ./user-service
     container_name: user-service
@@ -63,8 +110,10 @@ services:
       - MONGO_URI=mongodb://mongo:27017/user-service-db
       - JWT_SECRET=secreto-super-seguro
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
 
+  # Frontend (sin cambios)
   frontend:
     build:
       context: ./frontend
@@ -76,4 +125,5 @@ services:
       - booking-service
 
 volumes:
+  postgres_data:
   mongo_data:

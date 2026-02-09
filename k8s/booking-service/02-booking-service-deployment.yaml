@@ -1,0 +1,160 @@
+# Booking Service Deployment (GraphQL)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: booking-service
+  namespace: microservices
+  labels:
+    app: booking-service
+    version: v2
+spec:
+  replicas: 3 # Alta disponibilidad
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: booking-service
+  template:
+    metadata:
+      labels:
+        app: booking-service
+        version: v2
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "4000"
+    spec:
+      serviceAccountName: booking-service-sa
+
+      # Init container para garantizar que PG está listo
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z postgres.microservices.svc.cluster.local 5432; do
+                echo 'Esperando PostgreSQL...'
+                sleep 2
+              done
+
+      containers:
+        - name: booking-service
+          image: booking-service:latest # Cambiar a tu registry
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 4000
+              protocol: TCP
+
+          env:
+            # Variables de ConfigMap
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: booking-service-config
+                  key: NODE_ENV
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: booking-service-config
+                  key: PORT
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: booking-service-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: booking-service-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: booking-service-config
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: booking-service-config
+                  key: DB_USER
+            - name: USER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: booking-service-config
+                  key: USER_SERVICE_URL
+            - name: NOTIFICATION_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: booking-service-config
+                  key: NOTIFICATION_SERVICE_URL
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: booking-service-config
+                  key: LOG_LEVEL
+
+            # Variables de Secret
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: booking-service-secret
+                  key: DB_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: booking-service-secret
+                  key: JWT_SECRET
+
+          # Health checks
+          livenessProbe:
+            httpGet:
+              path: /.well-known/apollo/server-health
+              port: 4000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /.well-known/apollo/server-health
+              port: 4000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 2
+
+          # Resource limits
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+          # Security context
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+
+      # Pod disruption budget para alta disponibilidad
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - booking-service
+                topologyKey: kubernetes.io/hostname
