@@ -522,6 +522,36 @@ kubectl delete statefulset postgres -n microservices
 
 ---
 
+## Testing Backend
+
+### 1. Crear Usuario (Auth Service)
+
+```bash
+curl -X POST http://localhost:5001/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Juan Pérez",
+    "email": "juan@example.com",
+    "password": "password123"
+  }'
+```
+
+**Respuesta:**
+```json
+{
+  "message": "Usuario registrado correctamente",
+  "userId": "698a1ff65595d2fd69c9bb54"
+}
+```
+
+### 2. Acceder a GraphQL Apollo Studio
+
+**URL:** http://localhost:4000/graphql
+
+O click en: [Query your server](https://studio.apollographql.com/sandbox?endpoint=http%3A%2F%2Flocalhost%3A4000%2Fgraphql)
+
+---
+
 ## Ejemplos de GraphQL
 
 ### Query: Obtener Todas las Reservas
@@ -529,17 +559,42 @@ kubectl delete statefulset postgres -n microservices
 ```graphql
 query {
   bookings {
-    success
-    message
-    bookings {
-      id
-      userId
-      fecha
-      fechaFormateada
-      servicio
-      estado
-      createdAt
-    }
+    id
+    userId
+    fecha
+    servicio
+    estado
+    createdAt
+  }
+}
+```
+
+### Query: Reservas Próximas
+
+```graphql
+query {
+  upcomingBookings {
+    id
+    userId
+    fecha
+    servicio
+    estado
+  }
+}
+```
+
+### Query: Obtener Reserva por ID
+
+```graphql
+query {
+  bookingById(id: "UUID_AQUI") {
+    id
+    userId
+    fecha
+    servicio
+    estado
+    canceladaEn
+    createdAt
   }
 }
 ```
@@ -548,16 +603,17 @@ query {
 
 ```graphql
 mutation {
-  createBooking(
-    fecha: "2024-02-20T15:30:00"
-    servicio: "hotel"
-  ) {
-    success
-    booking {
-      id
-      fechaFormateada
-      estado
-    }
+  createBooking(input: {
+    userId: "698a1ff65595d2fd69c9bb54"
+    fecha: "2025-03-15"
+    servicio: "Hotel Quito"
+  }) {
+    id
+    userId
+    fecha
+    servicio
+    estado
+    createdAt
   }
 }
 ```
@@ -566,20 +622,27 @@ mutation {
 
 ```graphql
 mutation {
-  cancelBooking(id: "uuid-aqui") {
-    success
-    booking {
-      id
-      estado
-      canceladaEn
-    }
+  cancelBooking(id: "RESERVATION_ID_AQUI") {
+    id
+    estado
+    canceladaEn
   }
 }
 ```
 
-> **Nota:** Todas las queries/mutations requieren JWT en header `Authorization: Bearer TOKEN`
+### Mutation: Eliminar Reserva
 
-Más ejemplos en [booking-service/README_V2.md#-graphql-api](./booking-service/README_V2.md)
+```graphql
+mutation {
+  deleteBooking(id: "RESERVATION_ID_AQUI")
+}
+```
+
+**Nota sobre Transacciones ACID:** Al cancelar una reserva:
+1. Cambia estado a "cancelada"
+2. Registra timestamp en `canceladaEn`
+3. Si ya hay más de 5 canceladas, limpia automáticamente
+4. Envía notificación al usuario
 
 **Colección Postman:** Importar `booking-service/Postman_Collection.json` en Postman/Insomnia
 
