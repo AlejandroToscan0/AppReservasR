@@ -278,27 +278,247 @@ npm run dev
 ## Despliegue en Kubernetes
 
 ### Prerequisitos
-- kubectl instalado
-- Cluster Kubernetes (minikube, kind, EKS, AKS, GKE)
+- kubectl instalado y configurado
+- Cluster Kubernetes activo (minikube, kind, EKS, AKS, GKE, etc.)
+- Docker para construir images (o usar registry existente)
+- Permisos para crear resources en el cluster
 
-### Pasos
+### Verificación de Prerequisitos
 
 ```bash
-# 1. Aplicar todos los manifiestos
-kubectl apply -f k8s/booking-service/
+# Verificar kubectl
+kubectl version --client
 
-# 2. Verificar despliegue
-kubectl get pods -n microservices
-kubectl get svc -n microservices
+# Verificar cluster
+kubectl cluster-info
 
-# 3. Port-forward (si no tienes Ingress)
-kubectl port-forward svc/booking-service 4000:4000 -n microservices
+# Verificar contexto actual
+kubectl config current-context
 
-# 4. Acceder a GraphQL
-# http://localhost:4000/graphql
+# Listar clusters disponibles
+kubectl config get-contexts
 ```
 
-Más detalles en [k8s/DEPLOYMENT_GUIDE.md](./k8s/DEPLOYMENT_GUIDE.md)
+### Pasos de Despliegue (Paso a Paso)
+
+#### 1️⃣ **Construir y publicar la imagen del Booking Service**
+
+```bash
+# Opción A: Usar Docker Hub o tu registry privado
+cd booking-service
+docker build -t tu-registry/booking-service:v2.0 .
+docker push tu-registry/booking-service:v2.0
+
+# Opción B: Usar registro local de minikube
+eval $(minikube docker-env)
+docker build -t booking-service:v2.0 .
+```
+
+#### 2️⃣ **Actualizar referencia de imagen en Deployment (si necesario)**
+
+Si usaste un registry personalizado, actualiza `k8s/booking-service/02-booking-service-deployment.yaml`:
+
+```yaml
+containers:
+  - name: booking-service
+    image: tu-registry/booking-service:v2.0  # <-- Cambiar aquí
+    imagePullPolicy: Always
+```
+
+#### 3️⃣ **Crear Namespace (si no existe)**
+
+```bash
+kubectl create namespace microservices
+# o dejar que se cree automáticamente:
+kubectl apply -f k8s/booking-service/00-namespace-config.yaml
+```
+
+#### 4️⃣ **Aplicar todos los manifiestos en orden**
+
+```bash
+# Opción 1: Aplicar todo de una vez
+kubectl apply -f k8s/booking-service/
+
+# Opción 2: Aplicar en orden específico (recomendado)
+kubectl apply -f k8s/booking-service/00-namespace-config.yaml
+sleep 2
+kubectl apply -f k8s/booking-service/01-postgres-statefulset.yaml
+sleep 10  # Esperar a que PostgreSQL esté ready
+kubectl apply -f k8s/booking-service/02-booking-service-deployment.yaml
+kubectl apply -f k8s/booking-service/03-booking-service-service.yaml
+kubectl apply -f k8s/booking-service/04-booking-service-ingress.yaml
+```
+
+#### 5️⃣ **Verificar despliegue**
+
+```bash
+# Ver estado del namespace
+kubectl get all -n microservices
+
+# Ver pods
+kubectl get pods -n microservices -w  # -w para ver cambios en vivo
+
+# Ver si PostgreSQL está ready
+kubectl get statefulset -n microservices
+
+# Ver servicios
+kubectl get svc -n microservices
+
+# Ver eventos (útil para debugging)
+kubectl get events -n microservices --sort-by='.lastTimestamp'
+```
+
+#### 6️⃣ **Acceder al servicio**
+
+**Opción A: Port-forward (rápida)**
+```bash
+kubectl port-forward svc/booking-service 4000:4000 -n microservices
+# Acceder a: http://localhost:4000/graphql
+```
+
+**Opción B: NodePort (requiere exposición del nodo)**
+```bash
+# El servicio ya está expuesto en puerto 30400
+# Obtén la IP del nodo:
+kubectl get nodes -o wide
+
+# Accede a: http://<NODE_IP>:30400/graphql
+```
+
+**Opción C: Ingress (requiere Ingress Controller)**
+```bash
+# Edita hosts (solo para desarrollo local)
+echo "127.0.0.1 booking.reservasec.local" >> /etc/hosts
+
+# Usa el ingress:
+# http://booking.reservasec.local/graphql
+```
+
+---
+
+### Verificación de Salud
+
+```bash
+# Health check del Pod
+kubectl exec -it booking-service-<POD_ID> -n microservices -- \
+  curl http://localhost:4000/.well-known/apollo/server-health
+
+# Logs del Booking Service
+kubectl logs -n microservices svc/booking-service -f
+
+# Logs de PostgreSQL
+kubectl logs -n microservices statefulset/postgres -f
+
+# Describir un Pod (útil si está en estado CrashLoopBackOff)
+kubectl describe pod booking-service-<POD_ID> -n microservices
+```
+
+---
+
+### Configuración Avanzada
+
+#### Escalar Booking Service
+```bash
+# Aumentar replicas
+kubectl scale deployment booking-service --replicas=5 -n microservices
+
+# Ver escalado
+kubectl get deployment booking-service -n microservices
+```
+
+#### Actualizar imagen (Rolling Update)
+```bash
+# Actualizar imagen
+kubectl set image deployment/booking-service \
+  booking-service=tu-registry/booking-service:v2.1 \
+  -n microservices
+
+# Ver progreso
+kubectl rollout status deployment/booking-service -n microservices
+```
+
+#### Rollback a versión anterior
+```bash
+kubectl rollout undo deployment/booking-service -n microservices
+```
+
+#### Verificar estado de PersistentVolumeClaim
+```bash
+kubectl get pvc -n microservices
+kubectl describe pvc postgres-pvc -n microservices
+```
+
+---
+
+### Variables de Entorno en Kubernetes
+
+Las variables se inyectan desde:
+- **ConfigMap** `booking-service-config` → variables públicas
+- **Secret** `booking-service-secret` → credenciales sensibles
+
+Para actualizar:
+```bash
+# Actualizar ConfigMap
+kubectl edit configmap booking-service-config -n microservices
+
+# Actualizar Secret
+kubectl patch secret booking-service-secret -n microservices \
+  -p '{"data":{"DB_PASSWORD":"'$(echo -n "newpassword" | base64)'"}}'
+
+# Reiniciar pods para aplicar cambios
+kubectl rollout restart deployment/booking-service -n microservices
+```
+
+---
+
+### Troubleshooting
+
+**Pod en estado Pending:**
+```bash
+kubectl describe pod <POD_NAME> -n microservices
+# Revisar: recursos, nodos disponibles, PVC
+```
+
+**Pod en estado CrashLoopBackOff:**
+```bash
+kubectl logs <POD_NAME> -n microservices --tail=100
+# Revisar errores de aplicación
+```
+
+**PostgreSQL no se conecta:**
+```bash
+# Verificar que StatefulSet está running
+kubectl get statefulset -n microservices
+
+# Verificar logs de PostgreSQL
+kubectl logs postgres-0 -n microservices
+
+# Conectarse directamente a PostgreSQL
+kubectl exec -it postgres-0 -n microservices -- psql -U postgres
+```
+
+**Graphql endpoint no responde:**
+```bash
+# Verificar healthcheck
+kubectl exec -it <BOOKING_POD> -n microservices -- \
+  curl -v http://localhost:4000/.well-known/apollo/server-health
+
+# Ver logs
+kubectl logs <BOOKING_POD> -n microservices -f
+```
+
+---
+
+### Limpieza
+
+```bash
+# Eliminar todos los recursos del namespace
+kubectl delete namespace microservices
+
+# Eliminar solo ciertos resources
+kubectl delete deployment booking-service -n microservices
+kubectl delete statefulset postgres -n microservices
+```
 
 ---
 
