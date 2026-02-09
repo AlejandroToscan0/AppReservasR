@@ -52,11 +52,9 @@ ReservasEC es una plataforma completa de reservas que integra:
   - `04-booking-service-ingress.yaml`
 - Listos para: `kubectl apply -f k8s/booking-service/`
 
-### 4. **Documentación Completa**
-- [START_HERE.md](./START_HERE.md) - Guía de inicio rápido
-- [booking-service/README_V2.md](./booking-service/README_V2.md) - Documentación técnica
-- [k8s/DEPLOYMENT_GUIDE.md](./k8s/DEPLOYMENT_GUIDE.md) - Guía de Kubernetes
-- [REFACTORING_SUMMARY.md](./REFACTORING_SUMMARY.md) - Cambios realizados
+### 4. **Documentación**
+- [COMPLIANCE_CHECKLIST.md](./COMPLIANCE_CHECKLIST.md) - Verificación completa de requisitos (20/20 pts)
+- [README.md](./README.md) - Documentación técnica principal (este archivo)
 
 ---
 
@@ -723,7 +721,6 @@ app-reservas/
 │   │   ├── scripts/migrate.js        # Migraciones DDL
 │   │   └── tests/booking.test.js     # Tests
 │   ├── Postman_Collection.json       # Para testing
-│   ├── README_V2.md                  # Documentación técnica
 │   └── Dockerfile                    # Imagen Docker
 │
 ├── k8s/                              # Manifiestos Kubernetes
@@ -733,26 +730,15 @@ app-reservas/
 │   │   ├── 02-booking-service-deployment.yaml
 │   │   ├── 03-booking-service-service.yaml
 │   │   └── 04-booking-service-ingress.yaml
-│   └── DEPLOYMENT_GUIDE.md           # Guía de despliegue
 │
 ├── auth-service/                     # Sin cambios
 ├── user-service/                     # Sin cambios
 ├── notification-service/             # Sin cambios
 ├── frontend/                         # Sin cambios
 ├── docker-compose.yml                # Actualizado con PostgreSQL
-├── START_HERE.md                     # Guía rápida
-├── REFACTORING_SUMMARY.md            # Resumen de cambios
+├── COMPLIANCE_CHECKLIST.md           # Verificación 20/20 pts
 └── README.md                         # Este archivo
 ```
-
----
-
-## Documentación Adicional
-
-- [START_HERE.md](./START_HERE.md) - Comenza aquí
-- [booking-service/README_V2.md](./booking-service/README_V2.md) - Docs técnicas
-- [k8s/DEPLOYMENT_GUIDE.md](./k8s/DEPLOYMENT_GUIDE.md) - Kubernetes guide
-- [REFACTORING_SUMMARY.md](./REFACTORING_SUMMARY.md) - Cambios realizados
 
 ---
 
@@ -767,8 +753,8 @@ app-reservas/
 ## Contacto & Soporte
 
 Para preguntas sobre la refactorización, revisar:
-1. [REFACTORING_SUMMARY.md](./REFACTORING_SUMMARY.md)
-2. [booking-service/README_V2.md](./booking-service/README_V2.md)
+1. [COMPLIANCE_CHECKLIST.md](./COMPLIANCE_CHECKLIST.md) - Puntos de evaluación
+2. README.md - Documentación técnica
 3. Comentarios en el código
 
 ---
