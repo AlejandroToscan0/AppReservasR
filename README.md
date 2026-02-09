@@ -427,7 +427,7 @@ if (!result.success) {
 
 ```
 app-reservas/
-├── booking-service/                 # ✨ REFACTORIZADO v2.0
+├── booking-service/                 # REFACTORIZADO v2.0
 │   ├── src/
 │   │   ├── schema/types.graphql.js   # GraphQL types
 │   │   ├── resolvers/                # Orquestación GraphQL
@@ -443,7 +443,7 @@ app-reservas/
 │   ├── README_V2.md                  # Documentación técnica
 │   └── Dockerfile                    # Imagen Docker
 │
-├── k8s/                              # ✨ Manifiestos Kubernetes
+├── k8s/                              # Manifiestos Kubernetes
 │   ├── booking-service/
 │   │   ├── 00-namespace-config.yaml
 │   │   ├── 01-postgres-statefulset.yaml
@@ -456,9 +456,9 @@ app-reservas/
 ├── user-service/                     # Sin cambios
 ├── notification-service/             # Sin cambios
 ├── frontend/                         # Sin cambios
-├── docker-compose.yml                # ✨ Actualizado con PostgreSQL
-├── START_HERE.md                     # ✨ Guía rápida
-├── REFACTORING_SUMMARY.md            # ✨ Resumen de cambios
+├── docker-compose.yml                # Actualizado con PostgreSQL
+├── START_HERE.md                     # Guía rápida
+├── REFACTORING_SUMMARY.md            # Resumen de cambios
 └── README.md                         # Este archivo
 ```
 
@@ -492,7 +492,7 @@ Para preguntas sobre la refactorización, revisar:
 
 **Última actualización:** 9 de febrero de 2026  
 **Versión:** 2.0 (Refactorizada: GraphQL + PostgreSQL)  
-**Status:** ✅ Production-Ready
+**Status:** Production-Ready
 
 
 Backend .env (cada microservicio)
@@ -506,7 +506,7 @@ JWT_SECRET=supersecretkey
 
 Repite para los demás servicios cambiando PORT, MONGO_URI y usando el mismo JWT_SECRET.
 
-### 3. 🐳 Uso con Docker
+### 3. Uso con Docker
 
 1. Construir los contenedores
 

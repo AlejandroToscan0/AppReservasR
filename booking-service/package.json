@@ -11,18 +11,17 @@
         "seed": "node src/scripts/seed.js"
     },
     "dependencies": {
-        "apollo-server": "^4.10.0",
-        "axios": "^1.10.0",
+        "apollo-server": "3.13.0",
+        "axios": "^1.6.0",
         "cors": "^2.8.5",
-        "date-fns": "^4.1.0",
-        "date-fns-tz": "^3.2.0",
-        "dotenv": "^16.5.0",
+        "date-fns": "^2.30.0",
+        "date-fns-tz": "^2.0.0",
+        "dotenv": "^16.3.1",
         "graphql": "^16.8.0",
         "jsonwebtoken": "^9.0.2",
-        "luxon": "^3.6.1",
+        "luxon": "^3.4.0",
         "pg": "^8.11.0",
-        "sequelize": "^6.35.0",
-        "sequelize-cli": "^6.6.2"
+        "sequelize": "^6.35.0"
     },
     "devDependencies": {
         "nodemon": "^3.1.10"
